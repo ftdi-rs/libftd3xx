@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "crates/libftd3xx",
+    "crates/libftd3xx-py",
+]

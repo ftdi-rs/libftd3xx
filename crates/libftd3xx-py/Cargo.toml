@@ -1,0 +1,25 @@
+[package]
+name = "libftd3xx-py"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+readme = "README.md"
+# Note: this is symlinked from top level
+license-file = "LICENSE"
+
+[lib]
+name = "libftd3xx"
+crate-type = ["cdylib"]
+doc = false
+
+[dependencies]
+regex = "1.7"
+pyo3 = { version = "0.18.3", features = ["extension-module"] }
+libftd3xx = { path = "../libftd3xx" }
+
+[build-dependencies]
+pyo3-build-config = "0.18.3"
+
+[package.metadata.release]
+shared-version = true

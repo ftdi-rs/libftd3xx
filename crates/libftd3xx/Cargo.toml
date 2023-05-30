@@ -1,0 +1,18 @@
+[package]
+name = "libftd3xx"
+version = "0.0.1"
+authors = ["David Rebbe <drebbe@intrepidcs.com>"]
+edition = "2021"
+description = "Rust safe wrapper around the libftd3xx-ffi crate."
+keywords = ["ftdi", "usb"]
+categories = ["api-bindings", "hardware-support"]
+readme = "README.md"
+repository = "https://github.com/ftdi-rs/libftd3xx/"
+documentation = "https://docs.rs/libftd3xx"
+license = "MIT"
+
+[features]
+static = ["libftd3xx-ffi/static"]
+
+[dependencies]
+libftd3xx-ffi = "~0.0.2"
