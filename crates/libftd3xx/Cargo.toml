@@ -15,4 +15,5 @@ license = "MIT"
 static = ["libftd3xx-ffi/static"]
 
 [dependencies]
+cfg-if = "1.0.0"
 libftd3xx-ffi = "~0.0.2"
