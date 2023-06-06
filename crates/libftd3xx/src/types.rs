@@ -4,7 +4,7 @@ use libftd3xx_ffi::prelude::*;
 use core::fmt;
 
 /// Errors associated with this library
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     /// Low level API error directly from the FTD3xx Library
     APIError(FT_Status),
@@ -64,7 +64,7 @@ impl Version {
     /// # Example
     ///
     /// ```
-    /// use libftd2xx::Version;
+    /// use libftd3xx::types::Version;
     ///
     /// let version = Version::new(3, 1, 15);
     /// assert_eq!(
@@ -92,10 +92,10 @@ impl Version {
     /// # Example
     ///
     /// ```
-    /// use libftd2xx::Version;
+    /// use libftd3xx::types::Version;
     ///
-    /// let version = Version::with_raw(0x00030115);
-    /// assert_eq!(version, Version::new(3, 1, 15));
+    /// let version = Version::with_raw(0x01020003);
+    /// assert_eq!(version, Version::new(1, 2, 3));
     /// ```
     pub fn with_raw(value: u32) -> Version {
         Version::new(
@@ -133,8 +133,8 @@ mod test {
     #[test]
     fn display() {
         assert_eq!(
-            format!("{}", Version::with_raw(0x00030115)),
-            String::from("3.1.15")
+            format!("{}", Version::with_raw(0x01020003)),
+            String::from("1.2.3")
         )
     }
 }
