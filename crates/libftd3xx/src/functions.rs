@@ -5,21 +5,20 @@ use crate::types::{Error, Result, Version};
 
 
 
-/// Returns the version of the underlying C library.
+/// Get the D3XX user driver library version number.
 ///
-/// **Note**: The documentation says this function is only supported on Windows
-/// but it seems to work correctly on Linux.
-///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// FT error code. See [`FT_Status`] for more information.
+/// 
 /// # Example
 ///
 /// ```no_run
-/// use libftd3xx::library_version;
+/// use libftd3xx::functions::get_library_version;
 ///
-/// let version = library_version()?;
+/// let version = get_library_version()?;
 /// println!("libftd3xx C library version: {}", version);
-/// # Ok::<(), libftd3xx::FtStatus>(())
 /// ```
-pub fn library_version() -> Result<Version> {
+pub fn get_library_version() -> Result<Version> {
     let mut version: u32 = 0;
     //trace!("FT_GetLibraryVersion(_)");
     let status = unsafe { FT_Status::try_from(FT_GetLibraryVersion(&mut version)) }?;
@@ -38,8 +37,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_library_version() {
-        let result = library_version();
+    fn test_get_library_version() {
+        let result = get_library_version();
         //let expected_version: u32 = 0x0;
         cfg_if::cfg_if! {
             if #[cfg(all(target_os = "linux", target_arch = "x86_64"))] {

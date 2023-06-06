@@ -27,14 +27,14 @@ impl Version {
 }
 
 #[pyfunction]
-fn library_version() -> PyResult<Version> {
+fn get_library_version() -> PyResult<Version> {
     Ok(Version {
-        inner: ftd3xx::functions::library_version().unwrap(),
+        inner: ftd3xx::functions::get_library_version().unwrap(),
     })
 }
 
 #[pymodule]
 fn libftd3xx(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(library_version, m)?)?;
+    m.add_function(wrap_pyfunction!(get_library_version, m)?)?;
     Ok(())
 }

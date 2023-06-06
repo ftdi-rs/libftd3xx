@@ -22,10 +22,10 @@ Python bindings to libftd3xx
         - `.\.venv\Scripts\Activate.ps1`
     - Build and test the module: 
         - `maturin develop`
-        - `python -c "import libftd3xx; print(libftd3xx.library_version())"`
+        - `python -c "import libftd3xx; print(libftd3xx.get_library_version())"`
             - Example in terminal:
                 ```
-                > python -c "import libftd3xx; print(libftd3xx.library_version())"
+                > python -c "import libftd3xx; print(libftd3xx.get_library_version())"
                 1.3.4
                 ```
     - See: [venv](https://docs.python.org/3/library/venv.html) for more documentation
