@@ -49,39 +49,6 @@ pub struct Version {
     pub build: u16,
 }
 
-#[cfg(test)]
-mod version {
-    use super::*;
-
-    macro_rules! case {
-        ($name:ident, ($a:expr, $b:expr, $c:expr), ($d:expr, $e:expr, $f:expr)) => {
-            #[test]
-            fn $name() {
-                let big = Version::new($a, $b, $c);
-                let little = Version::new($d, $e, $f);
-                assert!(big > little);
-                assert!(little < big);
-            }
-        };
-    }
-
-    case!(case_1, (0, 0, 1), (0, 0, 0));
-    case!(case_2, (0, 1, 0), (0, 0, 0));
-    case!(case_3, (1, 0, 0), (0, 0, 0));
-    case!(case_4, (2, 2, 2), (1, 1, 1));
-    case!(case_5, (255, 255, 255), (254, 255, 255));
-    case!(case_6, (1, 0, 0), (0, 255, 255));
-    case!(case_7, (13, 255, 0), (13, 254, 255));
-
-    #[test]
-    fn display() {
-        assert_eq!(
-            format!("{}", Version::with_raw(0x00030115)),
-            String::from("3.1.15")
-        )
-    }
-}
-
 impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}.{}.{}", self.major, self.minor, self.build)
@@ -132,6 +99,39 @@ impl Version {
             ((value >> 24) & 0xFF) as u8,
             ((value >> 16) & 0xFF) as u8,
             (value & 0xFFFF) as u16,
+        )
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    macro_rules! test_version {
+        ($name:ident, ($a:expr, $b:expr, $c:expr), ($d:expr, $e:expr, $f:expr)) => {
+            #[test]
+            fn $name() {
+                let big = Version::new($a, $b, $c);
+                let little = Version::new($d, $e, $f);
+                assert!(big > little);
+                assert!(little < big);
+            }
+        };
+    }
+
+    test_version!(case_1, (0, 0, 1), (0, 0, 0));
+    test_version!(case_2, (0, 1, 0), (0, 0, 0));
+    test_version!(case_3, (1, 0, 0), (0, 0, 0));
+    test_version!(case_4, (2, 2, 2), (1, 1, 1));
+    test_version!(case_5, (255, 255, 255), (254, 255, 255));
+    test_version!(case_6, (1, 0, 0), (0, 255, 255));
+    test_version!(case_7, (13, 255, 0), (13, 254, 255));
+
+    #[test]
+    fn display() {
+        assert_eq!(
+            format!("{}", Version::with_raw(0x00030115)),
+            String::from("3.1.15")
         )
     }
 }

@@ -1,8 +1,7 @@
 use libftd3xx_ffi::prelude::*;
 
 pub mod types;
-
-use types::{Error, Result, Version};
+pub use types::{Error, Result, Version};
 
 
 /// Returns the version of the underlying C library.

@@ -1,0 +1,12 @@
+[build-system]
+requires = ["maturin>=1.0.0", "virtualenv>=20.0.0"]
+build-backend = "maturin"
+
+[project]
+name = "libftd3xx"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]

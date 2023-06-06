@@ -1,0 +1,18 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cargo",
+			"command": "build",
+			"problemMatcher": [
+				"$rustc",
+				"$rust-panic"
+			],
+			"group": "build",
+			"label": "rust: cargo build",
+			"env": {
+				"PYO3_PYTHON": "${userHome}\\.pyenv\\pyenv-win\\versions\\3.11.3\\python.exe",
+			},
+		}
+	]
+}
