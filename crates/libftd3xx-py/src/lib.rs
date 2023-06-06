@@ -1,12 +1,11 @@
 use pyo3::prelude::*;
 
 use ::libftd3xx as ftd3xx;
-//use ftd3xx::types::Version;
 
 #[pyclass]
 #[repr(transparent)]
 struct Version {
-    pub inner: ftd3xx::Version,
+    pub inner: ftd3xx::types::Version,
 }
 
 #[pymethods]
@@ -14,7 +13,7 @@ impl Version {
     #[new]
     fn py_new(value: u32) -> Self {
         Self {
-            inner: ftd3xx::Version::with_raw(value),
+            inner: ftd3xx::types::Version::with_raw(value),
         }
     }
 
@@ -30,7 +29,7 @@ impl Version {
 #[pyfunction]
 fn library_version() -> PyResult<Version> {
     Ok(Version {
-        inner: ftd3xx::library_version().unwrap(),
+        inner: ftd3xx::functions::library_version().unwrap(),
     })
 }
 

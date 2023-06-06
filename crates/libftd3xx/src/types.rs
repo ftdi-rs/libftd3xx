@@ -1,3 +1,5 @@
+#![deny(missing_docs, unsafe_code)]
+///! Contains higher level objects and or constant values.
 use libftd3xx_ffi::prelude::*;
 use core::fmt;
 
@@ -27,6 +29,7 @@ impl From<&str> for Error {
     }
 }
 
+/// Generic crate Result object
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// D3XX version structure.
