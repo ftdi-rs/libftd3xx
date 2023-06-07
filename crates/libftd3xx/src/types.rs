@@ -106,17 +106,6 @@ impl Version {
     }
 }
 
-/// Represents FT_OPEN_* constants
-/// see [`create`]
-pub enum OpenBy {
-    /// FT_OPEN_BY_DESCRIPTION
-    Description,
-    /// FT_OPEN_BY_INDEX
-    Index,
-    /// FT_OPEN_BY_SERIAL_NUMBER
-    SerialNumber,
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
