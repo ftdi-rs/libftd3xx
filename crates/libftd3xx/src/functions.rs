@@ -1,7 +1,8 @@
 #![deny(missing_docs)]
 ///! Contains the safe versions of functions related to libftd3xx-ffi
-use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE};
-use crate::types::{Error, Result, Version};
+use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE }; //, FT_OPEN_BY_SERIAL_NUMBER, FT_OPEN_BY_DESCRIPTION, FT_OPEN_BY_INDEX};
+use crate::types::{Error, Result, Version, OpenBy};
+
 
 /// Get the D3XX user driver library version number.
 ///
@@ -129,6 +130,62 @@ pub fn get_device_info_list(devices: &mut Vec<FT_DEVICE_LIST_INFO_NODE>, num_dev
 
 // TODO: FT_GetDeviceInfoDetail
 
+
+/// Returns a device information list and the number of D3XX devices in the list.
+/// 
+/// This function should only be called after calling FT_CreateDeviceInfoList. If the devices
+/// connected to the system change, the device info list will not be updated until
+/// FT_CreateDeviceInfoList is called again.
+/// 
+/// Information is not available for devices which are open in other processes. In this case, the
+/// Flags parameter of the FT_DEVICE_LIST_INFO_NODE will indicate that the device is open,
+/// but other fields will be unpopulated.
+/// 
+/// The array of FT_DEVICE_LIST_INFO_NODE contains all available data on each device. The
+/// storage for the list must be allocated by the application. The number of devices returned
+/// by FT_CreateDeviceInfoList can be used to do this.
+/// 
+/// The Type field of FT_DEVICE_LIST_INFO_NODE structure can be used to determine the
+/// device type. Currently, D3XX only supports FT60X devices, FT600 and FT601. The values
+/// returned in the Type field are located in the FT_DEVICES enumeration. FT600 and FT601
+/// devices have values of FT_DEVICE_600 and FT_DEVICE_601, respectively.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// FT error code. See [`FT_Status`] for more information.
+/// 
+/// # Example
+///
+/// ```no_run
+/// // TODO
+/// use libftd3xx::functions::get_device_info_list;
+///
+/// //let num_devices = get_device_info_list().unwrap();
+/// //println!("number of devices: {}", num_devices);
+/// ```
+pub fn create(flag: OpenBy, handle: &mut FT_HANDLE) -> Result<()> {
+    //trace!("FT_Create(_)");
+    todo!();
+    Ok(())
+    
+    /*
+    let data = match &flag {
+        OpenBy::Description => Vec<u8>::new(),
+        OpenBy::Index => (),
+        OpenBy::SerialNumber => (),
+        _ => panic!("TODO flags"),
+    };
+    */
+    
+    /*
+    let status = unsafe { FT_Status::try_from(FT_Create(devices.as_mut_ptr() as *mut FT_DEVICE_LIST_INFO_NODE, num_devices)) }?;
+    if status == FT_OK {
+        return Ok(());
+    }
+    else {
+        return Err(Error::APIError(status));
+    }
+    */
+}
 
 #[cfg(test)]
 mod tests {
