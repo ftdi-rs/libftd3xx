@@ -117,11 +117,13 @@ pub fn create_device_info_list() -> Result<u32> {
 /// //let num_devices = get_device_info_list().unwrap();
 /// //println!("number of devices: {}", num_devices);
 /// ```
-pub fn get_device_info_list(devices: &mut Vec<FT_DEVICE_LIST_INFO_NODE>, num_devices: &mut u32) -> Result<()> {
+pub fn get_device_info_list(num_devices: &mut u32) -> Result<Vec<FT_DEVICE_LIST_INFO_NODE>> {
     //trace!("FT_GetDeviceInfoList(_)");
-    let status = unsafe { FT_Status::try_from(FT_GetDeviceInfoList(devices.as_mut_ptr() as *mut FT_DEVICE_LIST_INFO_NODE, num_devices)) }?;
+    let mut info_list: Vec<FT_DEVICE_LIST_INFO_NODE> = Vec::<FT_DEVICE_LIST_INFO_NODE>::new();
+    info_list.resize(*num_devices as usize, FT_DEVICE_LIST_INFO_NODE::default());
+    let status = unsafe { FT_Status::try_from(FT_GetDeviceInfoList(info_list.as_mut_ptr() as *mut FT_DEVICE_LIST_INFO_NODE, num_devices)) }?;
     if status == FT_OK {
-        return Ok(());
+        return Ok(info_list);
     }
     else {
         return Err(Error::APIError(status));
@@ -157,7 +159,7 @@ pub fn create_by_index(mut index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
     }
     else {
         return Err(Error::APIError(status));
-    }    
+    }
 }
 
 /// Open the device and return a handle which will be used for subsequent accesses.
@@ -180,6 +182,10 @@ pub fn create_by_serial_number<S: Into<String>>(serial: S) -> Result<FT_HANDLE> 
     //trace!("FT_Create(_)");
     let mut handle: FT_HANDLE = std::ptr::null_mut();
     let mut buffer: Vec<u8> = Vec::from(serial.into());
+    // Make sure our string is null terminated
+    if !buffer.ends_with(&[0u8]) {
+        buffer.push(0u8);
+    }
 
     let status = unsafe { FT_Status::try_from(FT_Create(buffer.as_mut_ptr() as *mut std::ffi::c_void, FT_OPEN_BY_SERIAL_NUMBER, &mut handle)) }?;
     if status == FT_OK {
@@ -285,12 +291,36 @@ mod tests {
         assert_eq!(result.unwrap(), expected_version);
     }
 
-    #[cfg(feature = "hardware_tests")]
+    #[cfg(not(feature = "hardware_tests"))]
     #[test]
     fn test_get_driver_version() {
         use crate::functions::Error::APIError;
 
-        let version = get_driver_version(std::ptr::null_mut());
-        assert_eq!(version, Err(APIError(FT_INVALID_HANDLE)));
+        let result = get_driver_version(std::ptr::null_mut());
+        assert_eq!(result, Err(APIError(FT_INVALID_HANDLE)));
+    }
+
+    #[cfg(feature = "hardware_tests")]
+    #[test]
+    fn test_get_device_info_list() {
+        let device_count = create_device_info_list().unwrap();
+        assert_eq!(device_count >= 1, true);
+        let mut num_devices = device_count.clone();
+        let info_list = get_device_info_list(&mut num_devices).unwrap();
+        assert_eq!(info_list.len() >= 1, true);
+        assert_eq!(num_devices, device_count);
+    }
+
+    #[cfg(feature = "hardware_tests")]
+    #[test]
+    fn test_get_driver_version() {
+        // Grab the first device
+        let device_count = create_device_info_list().unwrap();
+        assert_eq!(device_count >= 1, true);
+        //let handle = create_by_index(0).unwrap();
+        let handle = create_by_serial_number("SM0070").unwrap();
+
+        let result = get_driver_version(handle);
+        assert_eq!(result.is_ok(), true);
     }
 }
