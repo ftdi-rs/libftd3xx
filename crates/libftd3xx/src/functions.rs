@@ -1,6 +1,8 @@
 #![deny(missing_docs)]
+use std::ffi::c_void;
+
 ///! Contains the safe versions of functions related to libftd3xx-ffi
-use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE}; //, FT_OPEN_BY_SERIAL_NUMBER, FT_OPEN_BY_DESCRIPTION, FT_OPEN_BY_INDEX};
+use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE, FT_60XCONFIGURATION}; //, FT_OPEN_BY_SERIAL_NUMBER, FT_OPEN_BY_DESCRIPTION, FT_OPEN_BY_INDEX};
 use crate::types::{Error, Result, Version};
 
 
@@ -149,11 +151,15 @@ pub fn get_device_info_list(num_devices: &mut u32) -> Result<Vec<FT_DEVICE_LIST_
 /// ```no_run
 /// // TODO
 /// ```
-pub fn create_by_index(mut index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
+pub fn create_by_index(index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
     //trace!("FT_Create(_)");
     let mut handle: FT_HANDLE = std::ptr::null_mut();
+    let mut index = index;
+    let pv_arg = &mut index as *mut std::ffi::c_ulong as *mut std::ffi::c_void;
+    let test = unsafe { *(pv_arg as *const std::ffi::c_ulong) };
+    println!("{test}");
 
-    let status = unsafe { FT_Status::try_from(FT_Create(&mut index as *mut u32 as *mut std::ffi::c_void, FT_OPEN_BY_INDEX, &mut handle)) }?;
+    let status = unsafe { FT_Status::try_from(FT_Create(pv_arg, FT_OPEN_BY_INDEX, &mut handle)) }?;
     if status == FT_OK {
         return Ok(handle);
     }
@@ -216,6 +222,10 @@ pub fn create_by_description<S: Into<String>>(description: S) -> Result<FT_HANDL
     //trace!("FT_Create(_)");
     let mut handle: FT_HANDLE = std::ptr::null_mut();
     let mut buffer: Vec<u8> = Vec::from(description.into());
+    // Make sure our string is null terminated
+    if !buffer.ends_with(&[0u8]) {
+        buffer.push(0u8);
+    }
 
     let status = unsafe { FT_Status::try_from(FT_Create(buffer.as_mut_ptr() as *mut std::ffi::c_void, FT_OPEN_BY_DESCRIPTION, &mut handle)) }?;
     if status == FT_OK {
@@ -247,6 +257,174 @@ pub fn close(handle: FT_HANDLE) -> Result<()> {
         return Err(Error::APIError(status));
     }
 }
+
+// todo: FT_WritePipe
+// todo: FT_ReadPipe
+// todo: FT_WritePipeEx
+// todo: FT_ReadPipeEx
+// todo: FT_GetOverlappedResult
+// todo: FT_GetOverlappedResult
+// todo: FT_InitializeOverlapped
+// todo: FT_ReleaseOverlapped
+// todo: FT_SetStreamPipe
+// todo: FT_ClearStreamPipe
+// todo: FT_FlushPipe
+// todo: FT_AbortPipe
+// todo: FT_GetDeviceDescriptor
+// todo: FT_GetConfigurationDescriptor
+// todo: FT_GetInterfaceDescriptor
+// todo: FT_GetPipeInformation
+// todo: FT_GetStringDescriptor
+// todo: FT_GetDescriptor
+// todo: FT_ControlTransfer
+// todo: FT_SetNotificationCallback
+// todo: FT_ClearNotificationCallback
+/// Returns the chip configuration.
+/// 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// FT error code. See [`FT_Status`] for more information.
+/// 
+/// # Example
+///
+/// ```no_run
+/// let handle = create_by_index(0).unwrap();
+/// let configuration = get_chip_configuration(handle).unwrap();
+/// println!("{:#?}", configuration);
+/// ```
+/// 
+/// # Sample Output
+/// ```
+/// FT_60XCONFIGURATION {
+///     VendorID: 2364,
+///     ProductID: 4610,
+///     StringDescriptors: [
+///         ...
+///     ],
+///     bInterval: 9,
+///     PowerAttributes: 160,
+///     PowerConsumption: 900,
+///     Reserved2: 0,
+///     FIFOClock: 0,
+///     FIFOMode: 1,
+///     ChannelConfig: 2,
+///     OptionalFeatureSupport: 0,
+///     BatteryChargingGPIOConfig: 0,
+///     FlashEEPROMDetection: 16,
+///     MSIO_Control: 67584,
+///     GPIO_Control: 0,
+///     }
+///```
+pub fn get_chip_configuration(handle: FT_HANDLE) -> Result<FT_60XCONFIGURATION> {
+    //trace!("FT_GetChipConfiguration(_)");
+    let mut config = FT_60XCONFIGURATION::default();
+    let status = unsafe { FT_Status::try_from(FT_GetChipConfiguration(handle, &mut config as *mut _ as *mut c_void)) }?;
+    if status == FT_OK {
+        return Ok(config);
+    }
+    else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// This API can be used to modify the configurable fields in the chip configuration.
+/// 
+///  If config is None, the configuration will be reset to default configuration. 
+/// 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// FT error code. See [`FT_Status`] for more information.
+/// 
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx_ffi::FT_60XCONFIGURATION;
+/// 
+/// // Open the first device
+/// let handle = create_by_index(0).unwrap();
+/// 
+/// // Set some configuration parameters (I wouldn't default)
+/// let configuration = FT_60XCONFIGURATION::default();
+/// assert_eq!(set_chip_configuration(handle, Some(configuration)).is_ok(), true);
+/// // Reset configuration:
+/// assert_eq!(set_chip_configuration(handle, None).is_ok(), true);
+/// ```
+pub fn set_chip_configuration(handle: FT_HANDLE, config: Option<FT_60XCONFIGURATION>) -> Result<()> {
+    //trace!("FT_SetChipConfiguration(_)");
+    // pvConfiguration can be NULL, which will reset the configuration to defaults
+    let config = match &config {
+        Some(mut c) => &mut c as *mut _ as *mut c_void,
+        None => std::ptr::null_mut() as *mut c_void,
+    };
+    let status = unsafe { FT_Status::try_from(FT_GetChipConfiguration(handle, config)) }?;
+    if status == FT_OK {
+        return Ok(());
+    }
+    else {
+        return Err(Error::APIError(status));
+    }
+}
+// todo: FT_GetFirmwareVersion
+// todo: FT_ResetDevicePort
+/// undocumented function
+/// 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// FT error code. See [`FT_Status`] for more information.
+/// 
+/// # Example
+///
+/// ```no_run
+/// // Open the first device
+/// let handle = create_by_index(0).unwrap();
+/// assert_eq!(reset_device_port(handle).is_ok(), true);
+/// ```
+pub fn reset_device_port(handle: FT_HANDLE) -> Result<()> {
+    //trace!("FT_ResetDevicePort(_)");
+
+    let status = unsafe { FT_Status::try_from(FT_ResetDevicePort(handle)) }?;
+    if status == FT_OK {
+        return Ok(());
+    }
+    else {
+        return Err(Error::APIError(status));
+    }
+}
+// todo: FT_CycleDevicePort
+/// Power cycles the device port. This causes the device to be re-enumerated by the host
+/// system.
+/// 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// FT error code. See [`FT_Status`] for more information.
+/// 
+/// # Example
+///
+/// ```no_run
+/// // Open the first device
+/// let handle = create_by_index(0).unwrap();
+/// assert_eq!(cycle_device_port(handle).is_ok(), true);
+/// ```
+pub fn cycle_device_port(handle: FT_HANDLE) -> Result<()> {
+    //trace!("FT_CycleDevicePort(_)");
+
+    let status = unsafe { FT_Status::try_from(FT_CycleDevicePort(handle)) }?;
+    if status == FT_OK {
+        return Ok(());
+    }
+    else {
+        return Err(Error::APIError(status));
+    }
+}
+
+// todo: FT_CreateDeviceInfoList
+// todo: FT_GetDeviceInfoList
+// todo: FT_GetDeviceInfoDetail
+// todo: FT_ListDevices
+// todo: FT_IsDevicePath
+// todo: FT_GetDriverVersion
+// todo: FT_GetLibraryVersion
+// todo: FT_SetPipeTimeout
+// todo: FT_EnableGPIO
+// todo: FT_WriteGPIO
+// todo: FT_ReadGPIO
+// todo: FT_SetGPIOPull
 
 #[cfg(test)]
 mod tests {
@@ -291,6 +469,22 @@ mod tests {
         assert_eq!(result.unwrap(), expected_version);
     }
 
+    // boilerplate function to simplify all the tests
+    #[cfg(feature = "hardware_tests")]
+    fn get_first_device() -> FT_HANDLE {
+        // for some reason on Windows 11 64-bit create_by_index isn't working...
+        //let handle = create_by_index(0).unwrap();
+
+        // Grab the first device
+        let mut device_count = create_device_info_list().unwrap();
+        assert_eq!(device_count >= 1, true, "Expected at least one device, got {device_count}");
+        let info_list = get_device_info_list(&mut device_count).unwrap();
+        let sn = String::from_utf8(info_list[0].SerialNumber.iter().map(|&c| c as u8).collect()).unwrap();
+        let handle = create_by_serial_number(sn).unwrap();
+
+        handle
+    }
+
     #[cfg(not(feature = "hardware_tests"))]
     #[test]
     fn test_get_driver_version() {
@@ -315,12 +509,23 @@ mod tests {
     #[test]
     fn test_get_driver_version() {
         // Grab the first device
-        let device_count = create_device_info_list().unwrap();
-        assert_eq!(device_count >= 1, true);
-        //let handle = create_by_index(0).unwrap();
-        let handle = create_by_serial_number("SM0070").unwrap();
+        let handle = get_first_device();
 
         let result = get_driver_version(handle);
         assert_eq!(result.is_ok(), true);
+        assert_eq!(close(handle).is_ok(), true);
+    }
+
+    
+    #[cfg(feature = "hardware_tests")]
+    #[test]
+    fn test_get_chip_configuration() {
+        // Grab the first device
+        let handle = get_first_device();
+
+        let result = get_chip_configuration(handle);
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(close(handle).is_ok(), true);
+        println!("{:#?}", result.unwrap())
     }
 }
