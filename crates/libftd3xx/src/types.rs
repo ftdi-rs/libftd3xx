@@ -38,10 +38,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Byte 0 and 1 (least significant) holds the build/SVN version. Byte 2 holds the minor
 /// version. Byte 3 holds the major version.
 ///
-/// This is returned by [`get_library_version`] and [`driver_version`].
+/// This is returned by [`get_library_version`] and [`get_driver_version`].
 ///
-/// [`get_library_version`]: crate::get_library_version
-/// [`driver_version`]: crate::FtdiCommon::driver_version
+/// [`get_library_version`]: crate::functions::get_library_version
+/// [`get_driver_version`]: crate::functions::get_driver_version
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Version {
     /// Major version.

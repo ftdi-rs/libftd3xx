@@ -2,7 +2,7 @@
 use std::ffi::c_void;
 
 ///! Contains the safe versions of functions related to libftd3xx-ffi
-use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE, FT_60XCONFIGURATION}; //, FT_OPEN_BY_SERIAL_NUMBER, FT_OPEN_BY_DESCRIPTION, FT_OPEN_BY_INDEX};
+use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE, FT_60XCONFIGURATION};
 use crate::types::{Error, Result, Version};
 
 
@@ -137,19 +137,24 @@ pub fn get_device_info_list(num_devices: &mut u32) -> Result<Vec<FT_DEVICE_LIST_
 
 /// Open the device and return a handle which will be used for subsequent accesses.
 /// 
-/// Using FT_OPEN_BY_SERIAL_NUMBER allows an application to open a device that has the
-/// specified Serial Number. Using FT_OPEN_BY_DESCRIPTION allows an application to open a
-/// device that has the specified Product Description. Using FT_OPEN_BY_INDEX is a fall-back
+/// Using [`FT_OPEN_BY_SERIAL_NUMBER`] allows an application to open a device that has the
+/// specified Serial Number. Using [`FT_OPEN_BY_DESCRIPTION`] allows an application to open a
+/// device that has the specified Product Description. Using [`FT_OPEN_BY_INDEX`] is a fall-back
 /// option for instances where the devices connected to a machine do not have a unique Serial
 /// Number or Product Description.
 ///
 /// Returns [`FT_OK`] if successful, otherwise the return value is an 
 /// FT error code. See [`FT_Status`] for more information.
 /// 
+/// [`FT_OPEN_BY_SERIAL_NUMBER`]: libftd3xx_ffi::FT_OPEN_BY_SERIAL_NUMBER
+/// [`FT_OPEN_BY_DESCRIPTION`]: libftd3xx_ffi::FT_OPEN_BY_DESCRIPTION
+/// [`FT_OPEN_BY_INDEX`]: libftd3xx_ffi::FT_OPEN_BY_INDEX
 /// # Example
 ///
 /// ```no_run
-/// // TODO
+/// use libftd3xx::functions::{create_by_index};
+/// 
+/// let handle = create_by_index(0).unwrap();
 /// ```
 pub fn create_by_index(index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
     //trace!("FT_Create(_)");
@@ -170,19 +175,25 @@ pub fn create_by_index(index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
 
 /// Open the device and return a handle which will be used for subsequent accesses.
 /// 
-/// Using FT_OPEN_BY_SERIAL_NUMBER allows an application to open a device that has the
-/// specified Serial Number. Using FT_OPEN_BY_DESCRIPTION allows an application to open a
-/// device that has the specified Product Description. Using FT_OPEN_BY_INDEX is a fall-back
+/// Using [`FT_OPEN_BY_SERIAL_NUMBER`] allows an application to open a device that has the
+/// specified Serial Number. Using [`FT_OPEN_BY_DESCRIPTION`] allows an application to open a
+/// device that has the specified Product Description. Using [`FT_OPEN_BY_INDEX`] is a fall-back
 /// option for instances where the devices connected to a machine do not have a unique Serial
 /// Number or Product Description.
 ///
 /// Returns [`FT_OK`] if successful, otherwise the return value is an 
 /// FT error code. See [`FT_Status`] for more information.
 /// 
+/// [`FT_OPEN_BY_SERIAL_NUMBER`]: libftd3xx_ffi::FT_OPEN_BY_SERIAL_NUMBER
+/// [`FT_OPEN_BY_DESCRIPTION`]: libftd3xx_ffi::FT_OPEN_BY_DESCRIPTION
+/// [`FT_OPEN_BY_INDEX`]: libftd3xx_ffi::FT_OPEN_BY_INDEX
+/// 
 /// # Example
 ///
 /// ```no_run
-/// // TODO
+/// use libftd3xx::functions::{create_by_serial_number};
+/// 
+/// let handle = create_by_serial_number("MySerialNumber").unwrap();
 /// ```
 pub fn create_by_serial_number<S: Into<String>>(serial: S) -> Result<FT_HANDLE> {
     //trace!("FT_Create(_)");
@@ -204,19 +215,25 @@ pub fn create_by_serial_number<S: Into<String>>(serial: S) -> Result<FT_HANDLE> 
 
 /// Open the device and return a handle which will be used for subsequent accesses.
 /// 
-/// Using FT_OPEN_BY_SERIAL_NUMBER allows an application to open a device that has the
-/// specified Serial Number. Using FT_OPEN_BY_DESCRIPTION allows an application to open a
-/// device that has the specified Product Description. Using FT_OPEN_BY_INDEX is a fall-back
+/// Using [`FT_OPEN_BY_SERIAL_NUMBER`] allows an application to open a device that has the
+/// specified Serial Number. Using [`FT_OPEN_BY_DESCRIPTION`] allows an application to open a
+/// device that has the specified Product Description. Using [`FT_OPEN_BY_INDEX`] is a fall-back
 /// option for instances where the devices connected to a machine do not have a unique Serial
 /// Number or Product Description.
 ///
 /// Returns [`FT_OK`] if successful, otherwise the return value is an 
 /// FT error code. See [`FT_Status`] for more information.
 /// 
+/// [`FT_OPEN_BY_SERIAL_NUMBER`]: libftd3xx_ffi::FT_OPEN_BY_SERIAL_NUMBER
+/// [`FT_OPEN_BY_DESCRIPTION`]: libftd3xx_ffi::FT_OPEN_BY_DESCRIPTION
+/// [`FT_OPEN_BY_INDEX`]: libftd3xx_ffi::FT_OPEN_BY_INDEX
+/// 
 /// # Example
 ///
 /// ```no_run
-/// // TODO
+/// use libftd3xx::functions::{create_by_description};
+/// 
+/// let handle = create_by_description("MyDescription").unwrap();
 /// ```
 pub fn create_by_description<S: Into<String>>(description: S) -> Result<FT_HANDLE> {
     //trace!("FT_Create(_)");
@@ -244,7 +261,10 @@ pub fn create_by_description<S: Into<String>>(description: S) -> Result<FT_HANDL
 /// # Example
 ///
 /// ```no_run
-/// // TODO
+/// use libftd3xx::functions::{create_by_index, close};
+/// 
+/// let handle = create_by_index(0).unwrap();
+/// close(handle).unwrap();
 /// ```
 pub fn close(handle: FT_HANDLE) -> Result<()> {
     //trace!("FT_Create(_)");
@@ -509,7 +529,7 @@ mod tests {
             // Open the handle, sometimes we get FT_DEVICE_NOT_OPENED so lets retry here...
             handle = match create_by_serial_number(&sn) {
                 Ok(h) => h,
-                Err(APIError(FT_DEVICE_NOT_OPENED)) => continue,
+                Err(APIError(FT_DEVICE_NOT_OPENED)) | Err(APIError(FT_DEVICE_NOT_FOUND)) => continue,
                 Err(e) => panic!("create_by_serial_number({sn}) failed: {e}"),
             };
             break;
@@ -517,9 +537,9 @@ mod tests {
         handle
     }
 
-    #[cfg(not(feature = "hardware_tests"))]
+    //#[cfg(not(feature = "hardware_tests"))]
     #[test]
-    fn test_get_driver_version() {
+    fn test_get_driver_version_invalid() {
         use crate::functions::Error::APIError;
 
         let result = get_driver_version(std::ptr::null_mut());
@@ -545,7 +565,7 @@ mod tests {
 
         let result = get_driver_version(handle);
         assert_eq!(result.is_ok(), true);
-        assert_eq!(close(handle).is_ok(), true);
+        assert!(close(handle).is_ok());
     }
 
     
@@ -557,7 +577,7 @@ mod tests {
 
         let result = get_chip_configuration(handle);
         assert_eq!(result.is_ok(), true);
-        assert_eq!(close(handle).is_ok(), true);
+        assert!(close(handle).is_ok());
         //println!("{:#?}", result.unwrap())
     }
 
@@ -574,7 +594,28 @@ mod tests {
         let result = set_chip_configuration(handle, Some(config));
         assert_eq!(result.is_ok(), true);
 
-        assert_eq!(close(handle).is_ok(), true);
+        assert!(close(handle).is_ok());
         //println!("{:#?}", result.unwrap())
+    }
+
+    #[cfg(feature = "hardware_tests")]
+    #[test]
+    fn test_cycle_device_port() {
+        // Grab the first device
+        let handle = get_first_device();
+        let result = cycle_device_port(handle);
+        assert!(result.is_ok());
+        assert!(close(handle).is_ok());
+    }
+
+    #[cfg(feature = "hardware_tests")]
+    #[test]
+    fn test_reset_device_port() {
+        // undocumented function, might need to disable if its causing issues here.
+        // Grab the first device
+        let handle = get_first_device();
+        let result = reset_device_port(handle);
+        assert!(result.is_ok());
+        assert!(close(handle).is_ok());
     }
 }
