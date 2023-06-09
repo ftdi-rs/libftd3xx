@@ -287,13 +287,15 @@ pub fn close(handle: FT_HANDLE) -> Result<()> {
 /// # Example
 ///
 /// ```no_run
+/// use libftd3xx::functions::{create_by_index, get_chip_configuration};
+/// 
 /// let handle = create_by_index(0).unwrap();
 /// let configuration = get_chip_configuration(handle).unwrap();
 /// println!("{:#?}", configuration);
 /// ```
 /// 
 /// # Sample Output
-/// ```
+/// ```ignore
 /// FT_60XCONFIGURATION {
 ///     VendorID: 2364,
 ///     ProductID: 4610,
@@ -336,6 +338,7 @@ pub fn get_chip_configuration(handle: FT_HANDLE) -> Result<FT_60XCONFIGURATION> 
 /// # Example
 ///
 /// ```no_run
+/// use libftd3xx::functions::{create_by_index, set_chip_configuration};
 /// use libftd3xx_ffi::FT_60XCONFIGURATION;
 /// 
 /// // Open the first device
@@ -372,6 +375,8 @@ pub fn set_chip_configuration(handle: FT_HANDLE, config: Option<FT_60XCONFIGURAT
 /// # Example
 ///
 /// ```no_run
+/// use libftd3xx::functions::{create_by_index, reset_device_port};
+/// 
 /// // Open the first device
 /// let handle = create_by_index(0).unwrap();
 /// assert_eq!(reset_device_port(handle).is_ok(), true);
@@ -397,6 +402,7 @@ pub fn reset_device_port(handle: FT_HANDLE) -> Result<()> {
 /// # Example
 ///
 /// ```no_run
+/// use libftd3xx::functions::{create_by_index, cycle_device_port};
 /// // Open the first device
 /// let handle = create_by_index(0).unwrap();
 /// assert_eq!(cycle_device_port(handle).is_ok(), true);
@@ -429,6 +435,9 @@ pub fn cycle_device_port(handle: FT_HANDLE) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::{CStr};
+    use std::{thread, time};
+    use crate::functions::Error::APIError;
 
     #[test]
     fn test_get_library_version() {
@@ -478,10 +487,33 @@ mod tests {
         // Grab the first device
         let mut device_count = create_device_info_list().unwrap();
         assert_eq!(device_count >= 1, true, "Expected at least one device, got {device_count}");
-        let info_list = get_device_info_list(&mut device_count).unwrap();
-        let sn = String::from_utf8(info_list[0].SerialNumber.iter().map(|&c| c as u8).collect()).unwrap();
-        let handle = create_by_serial_number(sn).unwrap();
-
+        let mut sn = String::new();
+        // There is a bug in the FTD3XX library that randomly doesn't return the serial number, lets loop here until we get one
+        loop {
+            let info_list = get_device_info_list(&mut device_count).unwrap();
+            // convert the serial number from a cstr to a String
+            let cstr_sn = unsafe { CStr::from_ptr(info_list[0].SerialNumber.as_ptr()) };
+            sn = String::from_utf8_lossy(cstr_sn.to_bytes()).to_string();
+            println!("SN: {sn} - {}", sn.len());
+            if sn.len() == 0 {
+                println!("Serial number isn't valid!");
+                continue;
+            } else {
+                println!("Serial number is valid! {sn} - {}", sn.len());
+                break;
+            }
+        }
+        assert!(!sn.is_empty());
+        let mut handle = std::ptr::null_mut();
+        loop {
+            // Open the handle, sometimes we get FT_DEVICE_NOT_OPENED so lets retry here...
+            handle = match create_by_serial_number(&sn) {
+                Ok(h) => h,
+                Err(APIError(FT_DEVICE_NOT_OPENED)) => continue,
+                Err(e) => panic!("create_by_serial_number({sn}) failed: {e}"),
+            };
+            break;
+        }
         handle
     }
 
@@ -526,6 +558,23 @@ mod tests {
         let result = get_chip_configuration(handle);
         assert_eq!(result.is_ok(), true);
         assert_eq!(close(handle).is_ok(), true);
-        println!("{:#?}", result.unwrap())
+        //println!("{:#?}", result.unwrap())
+    }
+
+    #[cfg(feature = "hardware_tests")]
+    #[test]
+    fn test_set_chip_configuration() {
+        // Grab the first device
+        let handle = get_first_device();
+        // Read the configuration
+        let result = get_chip_configuration(handle);
+        assert_eq!(result.is_ok(), true);
+        let config = result.unwrap();
+        // Set the configuration
+        let result = set_chip_configuration(handle, Some(config));
+        assert_eq!(result.is_ok(), true);
+
+        assert_eq!(close(handle).is_ok(), true);
+        //println!("{:#?}", result.unwrap())
     }
 }
