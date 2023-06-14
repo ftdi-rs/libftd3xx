@@ -1,11 +1,9 @@
 use pyo3::prelude::*;
-//use libftd3xx_ffi::prelude::*;
 use ::libftd3xx as ftd3xx;
-use ftd3xx::prelude::*;
 
 pub mod types;
 
-use types::{Error, FtHandle, FtDeviceListInfoNode, Result, Version};
+use types::{FtHandle, FtDeviceListInfoNode, Result, Version};
 
 #[pyfunction]
 fn get_library_version() -> Result<Version> {

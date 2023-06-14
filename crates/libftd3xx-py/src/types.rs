@@ -1,18 +1,19 @@
 use libftd3xx_ffi::DWORD;
 use libftd3xx_ffi::ULONG;
-use pyo3::exceptions::PyOSError;
+use pyo3::create_exception;
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use pyo3::PyErr;
 use std::ffi::CStr;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
 use ::libftd3xx as ftd3xx;
-use ftd3xx::prelude::*;
 use ftd3xx::types::Error as FtError;
 use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE};
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+create_exception!(libftd3xx, FtException, PyRuntimeError);
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -22,7 +23,11 @@ impl std::error::Error for Error {}
 
 impl From<Error> for pyo3::PyErr {
     fn from(err: Error) -> Self {
-        PyOSError::new_err(err.to_string())
+        let args = match &err {
+            Error::Generic(FtError::APIError(e)) => (err.to_string(), *e as i64),
+            Error::Generic(FtError::CriticalAPIError(_)) => (err.to_string(), -1 as i64),
+        };
+        FtException::new_err(args)
     }
 }
 
@@ -109,7 +114,6 @@ macro_rules! define_basic_py_object_no_new {
 
         // Arc is only Send if T is Send so lets mark it as safe here
         unsafe impl Send for $name {}
-
     };
 }
 
@@ -133,12 +137,14 @@ define_basic_py_object_no_new!(FtDeviceListInfoNode, FT_DEVICE_LIST_INFO_NODE);
 
 impl FtDeviceListInfoNode {
     fn new() -> Self {
-        Self { 0: Arc::new(Mutex::new(FT_DEVICE_LIST_INFO_NODE::default())) }
+        Self {
+            0: Arc::new(Mutex::new(FT_DEVICE_LIST_INFO_NODE::default())),
+        }
     }
 
     pub fn from(data: FT_DEVICE_LIST_INFO_NODE) -> Self {
         Self {
-            0: Arc::new(Mutex::new(data))
+            0: Arc::new(Mutex::new(data)),
         }
     }
 }
