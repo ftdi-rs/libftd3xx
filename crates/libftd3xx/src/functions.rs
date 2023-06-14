@@ -160,8 +160,8 @@ pub fn create_by_index(index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
     let mut handle: FT_HANDLE = std::ptr::null_mut();
     let mut index = index;
     let pv_arg = &mut index as *mut std::ffi::c_ulong as *mut std::ffi::c_void;
-    let test = unsafe { *(pv_arg as *const std::ffi::c_ulong) };
-    println!("{test}");
+    //let test = unsafe { *(pv_arg as *const std::ffi::c_ulong) };
+    //println!("{test}");
 
     let status = unsafe { FT_Status::try_from(FT_Create(pv_arg, FT_OPEN_BY_INDEX, &mut handle)) }?;
     if status == FT_OK {
@@ -525,7 +525,7 @@ mod tests {
         let mut sn = String::new();
         // There is a bug in the FTD3XX library that randomly doesn't return the serial number, lets loop here until we get one
         loop {
-            let info_list = get_device_info_list(&mut device_count).unwrap();
+            let info_list: Vec<libftd3xx_ffi::_FT_DEVICE_LIST_INFO_NODE> = get_device_info_list(&mut device_count).unwrap();
             // convert the serial number from a cstr to a String
             let cstr_sn = unsafe { CStr::from_ptr(info_list[0].SerialNumber.as_ptr()) };
             sn = String::from_utf8_lossy(cstr_sn.to_bytes()).to_string();

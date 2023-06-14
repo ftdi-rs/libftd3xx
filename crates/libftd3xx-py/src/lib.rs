@@ -3,7 +3,7 @@ use ::libftd3xx as ftd3xx;
 
 pub mod types;
 
-use types::{FtHandle, FtDeviceListInfoNode, Result, Version};
+use types::{FtHandle, FtDeviceListInfoNode, Result, Version, FtException};
 
 #[pyfunction]
 fn get_library_version() -> Result<Version> {
@@ -56,7 +56,9 @@ fn close(handle: &FtHandle) -> Result<()> {
 }
 
 #[pymodule]
-fn libftd3xx(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn libftd3xx(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    m.add("FtException", py.get_type::<FtException>())?;
+    
     m.add_function(wrap_pyfunction!(get_library_version, m)?)?;
     m.add_function(wrap_pyfunction!(get_driver_version, m)?)?;
 
