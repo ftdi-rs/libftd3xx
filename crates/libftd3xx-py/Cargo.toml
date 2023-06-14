@@ -17,6 +17,8 @@ doc = false
 regex = "1.7"
 pyo3 = { version = "0.18.3", features = ["extension-module"] }
 libftd3xx = { path = "../libftd3xx" }
+libftd3xx-ffi = "~0.0.2"
+# libftd3xx-ffi = { path = "../../../libftd3xx-ffi/" }
 
 [build-dependencies]
 pyo3-build-config = "0.18.3"

@@ -1,16 +1,15 @@
 #![deny(missing_docs)]
 use std::ffi::c_void;
 
-///! Contains the safe versions of functions related to libftd3xx-ffi
-use libftd3xx_ffi::{prelude::*, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE, FT_60XCONFIGURATION};
 use crate::types::{Error, Result, Version};
-
+///! Contains the safe versions of functions related to libftd3xx-ffi
+use libftd3xx_ffi::{prelude::*, FT_60XCONFIGURATION, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE};
 
 /// Get the D3XX user driver library version number.
 ///
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
@@ -25,17 +24,16 @@ pub fn get_library_version() -> Result<Version> {
     let status = unsafe { FT_Status::try_from(FT_GetLibraryVersion(&mut version)) }?;
     if status == FT_OK {
         return Ok(Version::with_raw(version));
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 
 /// Get the D3XX kernel driver library version number.
 ///
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
@@ -52,8 +50,7 @@ pub fn get_driver_version(handle: FT_HANDLE) -> Result<Version> {
     let status = unsafe { FT_Status::try_from(FT_GetDriverVersion(handle, &mut version)) }?;
     if status == FT_OK {
         return Ok(Version::with_raw(version));
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
@@ -61,13 +58,13 @@ pub fn get_driver_version(handle: FT_HANDLE) -> Result<Version> {
 /// An application can use this function to get the number of devices attached to the system.
 /// It can then allocate space for the device information list and retrieve the list using
 /// FT_GetDeviceInfoList or FT_GetDeviceInfoDetail.
-/// 
+///
 /// If the devices connected to the system change, the device info list will not be updated until
 /// FT_CreateDeviceInfoList is called again.
 ///
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
@@ -82,34 +79,33 @@ pub fn create_device_info_list() -> Result<u32> {
     let status = unsafe { FT_Status::try_from(FT_CreateDeviceInfoList(&mut num_devices)) }?;
     if status == FT_OK {
         return Ok(num_devices);
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 
 /// Returns a device information list and the number of D3XX devices in the list.
-/// 
+///
 /// This function should only be called after calling FT_CreateDeviceInfoList. If the devices
 /// connected to the system change, the device info list will not be updated until
 /// FT_CreateDeviceInfoList is called again.
-/// 
+///
 /// Information is not available for devices which are open in other processes. In this case, the
 /// Flags parameter of the FT_DEVICE_LIST_INFO_NODE will indicate that the device is open,
 /// but other fields will be unpopulated.
-/// 
+///
 /// The array of FT_DEVICE_LIST_INFO_NODE contains all available data on each device. The
 /// storage for the list must be allocated by the application. The number of devices returned
 /// by FT_CreateDeviceInfoList can be used to do this.
-/// 
+///
 /// The Type field of FT_DEVICE_LIST_INFO_NODE structure can be used to determine the
 /// device type. Currently, D3XX only supports FT60X devices, FT600 and FT601. The values
 /// returned in the Type field are located in the FT_DEVICES enumeration. FT600 and FT601
 /// devices have values of FT_DEVICE_600 and FT_DEVICE_601, respectively.
 ///
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
@@ -123,29 +119,32 @@ pub fn get_device_info_list(num_devices: &mut u32) -> Result<Vec<FT_DEVICE_LIST_
     //trace!("FT_GetDeviceInfoList(_)");
     let mut info_list: Vec<FT_DEVICE_LIST_INFO_NODE> = Vec::<FT_DEVICE_LIST_INFO_NODE>::new();
     info_list.resize(*num_devices as usize, FT_DEVICE_LIST_INFO_NODE::default());
-    let status = unsafe { FT_Status::try_from(FT_GetDeviceInfoList(info_list.as_mut_ptr() as *mut FT_DEVICE_LIST_INFO_NODE, num_devices)) }?;
+    let status = unsafe {
+        FT_Status::try_from(FT_GetDeviceInfoList(
+            info_list.as_mut_ptr() as *mut FT_DEVICE_LIST_INFO_NODE,
+            num_devices,
+        ))
+    }?;
     if status == FT_OK {
         return Ok(info_list);
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 
 // TODO: FT_GetDeviceInfoDetail
 
-
 /// Open the device and return a handle which will be used for subsequent accesses.
-/// 
+///
 /// Using [`FT_OPEN_BY_SERIAL_NUMBER`] allows an application to open a device that has the
 /// specified Serial Number. Using [`FT_OPEN_BY_DESCRIPTION`] allows an application to open a
 /// device that has the specified Product Description. Using [`FT_OPEN_BY_INDEX`] is a fall-back
 /// option for instances where the devices connected to a machine do not have a unique Serial
 /// Number or Product Description.
 ///
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// [`FT_OPEN_BY_SERIAL_NUMBER`]: libftd3xx_ffi::FT_OPEN_BY_SERIAL_NUMBER
 /// [`FT_OPEN_BY_DESCRIPTION`]: libftd3xx_ffi::FT_OPEN_BY_DESCRIPTION
 /// [`FT_OPEN_BY_INDEX`]: libftd3xx_ffi::FT_OPEN_BY_INDEX
@@ -153,7 +152,7 @@ pub fn get_device_info_list(num_devices: &mut u32) -> Result<Vec<FT_DEVICE_LIST_
 ///
 /// ```no_run
 /// use libftd3xx::functions::{create_by_index};
-/// 
+///
 /// let handle = create_by_index(0).unwrap();
 /// ```
 pub fn create_by_index(index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
@@ -167,32 +166,31 @@ pub fn create_by_index(index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
     let status = unsafe { FT_Status::try_from(FT_Create(pv_arg, FT_OPEN_BY_INDEX, &mut handle)) }?;
     if status == FT_OK {
         return Ok(handle);
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 
 /// Open the device and return a handle which will be used for subsequent accesses.
-/// 
+///
 /// Using [`FT_OPEN_BY_SERIAL_NUMBER`] allows an application to open a device that has the
 /// specified Serial Number. Using [`FT_OPEN_BY_DESCRIPTION`] allows an application to open a
 /// device that has the specified Product Description. Using [`FT_OPEN_BY_INDEX`] is a fall-back
 /// option for instances where the devices connected to a machine do not have a unique Serial
 /// Number or Product Description.
 ///
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// [`FT_OPEN_BY_SERIAL_NUMBER`]: libftd3xx_ffi::FT_OPEN_BY_SERIAL_NUMBER
 /// [`FT_OPEN_BY_DESCRIPTION`]: libftd3xx_ffi::FT_OPEN_BY_DESCRIPTION
 /// [`FT_OPEN_BY_INDEX`]: libftd3xx_ffi::FT_OPEN_BY_INDEX
-/// 
+///
 /// # Example
 ///
 /// ```no_run
 /// use libftd3xx::functions::{create_by_serial_number};
-/// 
+///
 /// let handle = create_by_serial_number("MySerialNumber").unwrap();
 /// ```
 pub fn create_by_serial_number<S: Into<String>>(serial: S) -> Result<FT_HANDLE> {
@@ -204,35 +202,40 @@ pub fn create_by_serial_number<S: Into<String>>(serial: S) -> Result<FT_HANDLE> 
         buffer.push(0u8);
     }
 
-    let status = unsafe { FT_Status::try_from(FT_Create(buffer.as_mut_ptr() as *mut std::ffi::c_void, FT_OPEN_BY_SERIAL_NUMBER, &mut handle)) }?;
+    let status = unsafe {
+        FT_Status::try_from(FT_Create(
+            buffer.as_mut_ptr() as *mut std::ffi::c_void,
+            FT_OPEN_BY_SERIAL_NUMBER,
+            &mut handle,
+        ))
+    }?;
     if status == FT_OK {
         return Ok(handle);
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 
 /// Open the device and return a handle which will be used for subsequent accesses.
-/// 
+///
 /// Using [`FT_OPEN_BY_SERIAL_NUMBER`] allows an application to open a device that has the
 /// specified Serial Number. Using [`FT_OPEN_BY_DESCRIPTION`] allows an application to open a
 /// device that has the specified Product Description. Using [`FT_OPEN_BY_INDEX`] is a fall-back
 /// option for instances where the devices connected to a machine do not have a unique Serial
 /// Number or Product Description.
 ///
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// [`FT_OPEN_BY_SERIAL_NUMBER`]: libftd3xx_ffi::FT_OPEN_BY_SERIAL_NUMBER
 /// [`FT_OPEN_BY_DESCRIPTION`]: libftd3xx_ffi::FT_OPEN_BY_DESCRIPTION
 /// [`FT_OPEN_BY_INDEX`]: libftd3xx_ffi::FT_OPEN_BY_INDEX
-/// 
+///
 /// # Example
 ///
 /// ```no_run
 /// use libftd3xx::functions::{create_by_description};
-/// 
+///
 /// let handle = create_by_description("MyDescription").unwrap();
 /// ```
 pub fn create_by_description<S: Into<String>>(description: S) -> Result<FT_HANDLE> {
@@ -244,25 +247,30 @@ pub fn create_by_description<S: Into<String>>(description: S) -> Result<FT_HANDL
         buffer.push(0u8);
     }
 
-    let status = unsafe { FT_Status::try_from(FT_Create(buffer.as_mut_ptr() as *mut std::ffi::c_void, FT_OPEN_BY_DESCRIPTION, &mut handle)) }?;
+    let status = unsafe {
+        FT_Status::try_from(FT_Create(
+            buffer.as_mut_ptr() as *mut std::ffi::c_void,
+            FT_OPEN_BY_DESCRIPTION,
+            &mut handle,
+        ))
+    }?;
     if status == FT_OK {
         return Ok(handle);
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 
 /// Close an open device.
-/// 
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
 /// use libftd3xx::functions::{create_by_index, close};
-/// 
+///
 /// let handle = create_by_index(0).unwrap();
 /// close(handle).unwrap();
 /// ```
@@ -272,8 +280,7 @@ pub fn close(handle: FT_HANDLE) -> Result<()> {
     let status = unsafe { FT_Status::try_from(FT_Close(handle)) }?;
     if status == FT_OK {
         return Ok(());
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
@@ -300,20 +307,20 @@ pub fn close(handle: FT_HANDLE) -> Result<()> {
 // todo: FT_SetNotificationCallback
 // todo: FT_ClearNotificationCallback
 /// Returns the chip configuration.
-/// 
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
 /// use libftd3xx::functions::{create_by_index, get_chip_configuration};
-/// 
+///
 /// let handle = create_by_index(0).unwrap();
 /// let configuration = get_chip_configuration(handle).unwrap();
 /// println!("{:#?}", configuration);
 /// ```
-/// 
+///
 /// # Sample Output
 /// ```ignore
 /// FT_60XCONFIGURATION {
@@ -339,38 +346,45 @@ pub fn close(handle: FT_HANDLE) -> Result<()> {
 pub fn get_chip_configuration(handle: FT_HANDLE) -> Result<FT_60XCONFIGURATION> {
     //trace!("FT_GetChipConfiguration(_)");
     let mut config = FT_60XCONFIGURATION::default();
-    let status = unsafe { FT_Status::try_from(FT_GetChipConfiguration(handle, &mut config as *mut _ as *mut c_void)) }?;
+    let status = unsafe {
+        FT_Status::try_from(FT_GetChipConfiguration(
+            handle,
+            &mut config as *mut _ as *mut c_void,
+        ))
+    }?;
     if status == FT_OK {
         return Ok(config);
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 
 /// This API can be used to modify the configurable fields in the chip configuration.
-/// 
-///  If config is None, the configuration will be reset to default configuration. 
-/// 
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+///
+///  If config is None, the configuration will be reset to default configuration.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
 /// use libftd3xx::functions::{create_by_index, set_chip_configuration};
 /// use libftd3xx_ffi::FT_60XCONFIGURATION;
-/// 
+///
 /// // Open the first device
 /// let handle = create_by_index(0).unwrap();
-/// 
+///
 /// // Set some configuration parameters (I wouldn't default)
 /// let configuration = FT_60XCONFIGURATION::default();
 /// assert_eq!(set_chip_configuration(handle, Some(configuration)).is_ok(), true);
 /// // Reset configuration:
 /// assert_eq!(set_chip_configuration(handle, None).is_ok(), true);
 /// ```
-pub fn set_chip_configuration(handle: FT_HANDLE, config: Option<FT_60XCONFIGURATION>) -> Result<()> {
+pub fn set_chip_configuration(
+    handle: FT_HANDLE,
+    config: Option<FT_60XCONFIGURATION>,
+) -> Result<()> {
     //trace!("FT_SetChipConfiguration(_)");
     // pvConfiguration can be NULL, which will reset the configuration to defaults
     let config = match &config {
@@ -380,23 +394,22 @@ pub fn set_chip_configuration(handle: FT_HANDLE, config: Option<FT_60XCONFIGURAT
     let status = unsafe { FT_Status::try_from(FT_GetChipConfiguration(handle, config)) }?;
     if status == FT_OK {
         return Ok(());
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 // todo: FT_GetFirmwareVersion
 // todo: FT_ResetDevicePort
 /// undocumented function
-/// 
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
 /// use libftd3xx::functions::{create_by_index, reset_device_port};
-/// 
+///
 /// // Open the first device
 /// let handle = create_by_index(0).unwrap();
 /// assert_eq!(reset_device_port(handle).is_ok(), true);
@@ -407,18 +420,17 @@ pub fn reset_device_port(handle: FT_HANDLE) -> Result<()> {
     let status = unsafe { FT_Status::try_from(FT_ResetDevicePort(handle)) }?;
     if status == FT_OK {
         return Ok(());
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
 // todo: FT_CycleDevicePort
 /// Power cycles the device port. This causes the device to be re-enumerated by the host
 /// system.
-/// 
-/// Returns [`FT_OK`] if successful, otherwise the return value is an 
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
 /// FT error code. See [`FT_Status`] for more information.
-/// 
+///
 /// # Example
 ///
 /// ```no_run
@@ -433,8 +445,7 @@ pub fn cycle_device_port(handle: FT_HANDLE) -> Result<()> {
     let status = unsafe { FT_Status::try_from(FT_CycleDevicePort(handle)) }?;
     if status == FT_OK {
         return Ok(());
-    }
-    else {
+    } else {
         return Err(Error::APIError(status));
     }
 }
@@ -455,9 +466,9 @@ pub fn cycle_device_port(handle: FT_HANDLE) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ffi::{CStr};
-    use std::{thread, time};
     use crate::functions::Error::APIError;
+    use std::ffi::CStr;
+    use std::{thread, time};
 
     #[test]
     fn test_get_library_version() {
@@ -506,7 +517,11 @@ mod tests {
 
         // Grab the first device
         let mut device_count = create_device_info_list().unwrap();
-        assert_eq!(device_count >= 1, true, "Expected at least one device, got {device_count}");
+        assert_eq!(
+            device_count >= 1,
+            true,
+            "Expected at least one device, got {device_count}"
+        );
         let mut sn = String::new();
         // There is a bug in the FTD3XX library that randomly doesn't return the serial number, lets loop here until we get one
         loop {
@@ -529,7 +544,9 @@ mod tests {
             // Open the handle, sometimes we get FT_DEVICE_NOT_OPENED so lets retry here...
             handle = match create_by_serial_number(&sn) {
                 Ok(h) => h,
-                Err(APIError(FT_DEVICE_NOT_OPENED)) | Err(APIError(FT_DEVICE_NOT_FOUND)) => continue,
+                Err(APIError(FT_DEVICE_NOT_OPENED)) | Err(APIError(FT_DEVICE_NOT_FOUND)) => {
+                    continue
+                }
                 Err(e) => panic!("create_by_serial_number({sn}) failed: {e}"),
             };
             break;
@@ -568,7 +585,6 @@ mod tests {
         assert!(close(handle).is_ok());
     }
 
-    
     #[cfg(feature = "hardware_tests")]
     #[test]
     fn test_get_chip_configuration() {

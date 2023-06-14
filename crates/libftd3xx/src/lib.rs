@@ -7,3 +7,6 @@ pub mod types;
 
 /// Safe ftd3xx functions
 pub mod functions;
+
+/// Use this for easy access to the most common things
+pub mod prelude;

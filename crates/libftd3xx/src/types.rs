@@ -1,7 +1,7 @@
 #![deny(missing_docs, unsafe_code)]
+use core::fmt;
 ///! Contains higher level objects and or constant values.
 use libftd3xx_ffi::prelude::*;
-use core::fmt;
 
 /// Errors associated with this library
 #[derive(Debug, PartialEq)]
