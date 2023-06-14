@@ -14,3 +14,13 @@ class DriverVersionTestCase(unittest.TestCase):
 
     def test_get_driver_version(self):
         self.assertRaises(TypeError, ftd3xx.get_driver_version, (None,))
+
+        device_count = ftd3xx.create_device_info_list()
+        device_info = ftd3xx.get_device_info_list(device_count)
+        if device_count > 0:
+            print(device_info[0].SerialNumber)
+            print(device_info[0])
+            handle = ftd3xx.create_by_serial_number(device_info[0].SerialNumber)
+            _ = ftd3xx.get_driver_version(handle)
+            print(f"Driver Version: {_}")
+            ftd3xx.close(handle)

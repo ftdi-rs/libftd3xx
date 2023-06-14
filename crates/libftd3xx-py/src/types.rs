@@ -1,6 +1,9 @@
+use libftd3xx_ffi::DWORD;
+use libftd3xx_ffi::ULONG;
 use pyo3::exceptions::PyOSError;
 use pyo3::prelude::*;
 use pyo3::PyErr;
+use std::ffi::CStr;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
@@ -60,17 +63,32 @@ impl Version {
     fn __repr__(&self) -> String {
         format!("<Version {}>", self.0.to_string())
     }
+
+    #[getter]
+    fn major(&self) -> PyResult<u8> {
+        Ok(self.0.major)
+    }
+
+    #[getter]
+    fn minor(&self) -> PyResult<u8> {
+        Ok(self.0.minor)
+    }
+
+    #[getter]
+    fn build(&self) -> PyResult<u16> {
+        Ok(self.0.build)
+    }
 }
 
 macro_rules! define_basic_py_object {
-    ($name:ident, $inner_name:ident) => {
+    ($name:ident, $inner_name:ty) => {
         #[pyclass]
         #[derive(Debug)]
         #[repr(transparent)]
         pub struct $name(pub Arc<Mutex<$inner_name>>);
 
+        // Arc is only Send if T is Send so lets mark it as safe here
         unsafe impl Send for $name {}
-        unsafe impl Sync for $name {}
 
         #[pymethods]
         impl $name {
@@ -82,8 +100,20 @@ macro_rules! define_basic_py_object {
     };
 }
 
+macro_rules! define_basic_py_object_no_new {
+    ($name:ident, $inner_name:ty) => {
+        #[pyclass]
+        #[derive(Debug)]
+        #[repr(transparent)]
+        pub struct $name(pub Arc<Mutex<$inner_name>>);
+
+        // Arc is only Send if T is Send so lets mark it as safe here
+        unsafe impl Send for $name {}
+
+    };
+}
+
 define_basic_py_object!(FtHandle, FT_HANDLE);
-//define_basic_py_object!(FtDeviceListInfoNode, Vec<FT_DEVICE_LIST_INFO_NODE>);
 
 impl FtHandle {
     fn new() -> Self {
@@ -91,12 +121,78 @@ impl FtHandle {
             0: Arc::new(Mutex::new(std::ptr::null_mut())),
         }
     }
-}
 
-/*
-impl FtDeviceListInfoNode {
-    fn new() -> Self {
-        Self { 0: Arc::new(Mutex::new(std::ptr::null_mut())) }
+    pub fn from(handle: FT_HANDLE) -> Self {
+        Self {
+            0: Arc::new(Mutex::new(handle)),
+        }
     }
 }
-*/
+
+define_basic_py_object_no_new!(FtDeviceListInfoNode, FT_DEVICE_LIST_INFO_NODE);
+
+impl FtDeviceListInfoNode {
+    fn new() -> Self {
+        Self { 0: Arc::new(Mutex::new(FT_DEVICE_LIST_INFO_NODE::default())) }
+    }
+
+    pub fn from(data: FT_DEVICE_LIST_INFO_NODE) -> Self {
+        Self {
+            0: Arc::new(Mutex::new(data))
+        }
+    }
+}
+
+#[pymethods]
+impl FtDeviceListInfoNode {
+    #[new]
+    fn py_new() -> Self {
+        Self::new()
+    }
+
+    #[getter(Flags)]
+    fn flags(&self) -> PyResult<ULONG> {
+        let info = *self.0.lock().unwrap();
+        Ok(info.Flags)
+    }
+
+    #[getter(Type)]
+    fn get_type(&self) -> PyResult<ULONG> {
+        let info = *self.0.lock().unwrap();
+        Ok(info.Type)
+    }
+
+    #[getter(ID)]
+    fn id(&self) -> PyResult<ULONG> {
+        let info = *self.0.lock().unwrap();
+        Ok(info.ID)
+    }
+
+    #[getter(LocID)]
+    fn loc_id(&self) -> PyResult<DWORD> {
+        let info = *self.0.lock().unwrap();
+        Ok(info.LocId)
+    }
+
+    #[getter(SerialNumber)]
+    fn serial_number(&self) -> PyResult<String> {
+        let info = *self.0.lock().unwrap();
+        let cstr_sn = unsafe { CStr::from_ptr(info.SerialNumber.as_ptr()) };
+        let sn = String::from_utf8_lossy(cstr_sn.to_bytes()).to_string();
+        Ok(sn)
+    }
+
+    #[getter(Description)]
+    fn description(&self) -> PyResult<String> {
+        let info = *self.0.lock().unwrap();
+        let cstr_sn = unsafe { CStr::from_ptr(info.Description.as_ptr()) };
+        let description = String::from_utf8_lossy(cstr_sn.to_bytes()).to_string();
+        Ok(description)
+    }
+
+    #[getter(ftHandle)]
+    fn ft_handle(&self) -> PyResult<FtHandle> {
+        let info = *self.0.lock().unwrap();
+        Ok(FtHandle::from(info.ftHandle))
+    }
+}
