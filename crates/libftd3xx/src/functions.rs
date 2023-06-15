@@ -3,7 +3,10 @@ use std::ffi::c_void;
 
 use crate::types::{Error, Result, Version};
 ///! Contains the safe versions of functions related to libftd3xx-ffi
-use libftd3xx_ffi::{prelude::*, FT_60XCONFIGURATION, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE};
+use libftd3xx_ffi::{
+    prelude::*, FT_60XCONFIGURATION, FT_DEVICE_LIST_INFO_NODE, FT_HANDLE, LPOVERLAPPED, PULONG,
+    UCHAR, ULONG,
+};
 
 /// Get the D3XX user driver library version number.
 ///
@@ -281,27 +284,522 @@ pub fn close(handle: FT_HANDLE) -> Result<()> {
     }
 }
 
-// todo: FT_WritePipe
-// todo: FT_ReadPipe
-// todo: FT_WritePipeEx
-// todo: FT_ReadPipeEx
-// todo: FT_GetOverlappedResult
-// todo: FT_GetOverlappedResult
-// todo: FT_InitializeOverlapped
-// todo: FT_ReleaseOverlapped
-// todo: FT_SetStreamPipe
-// todo: FT_ClearStreamPipe
+/// Write data to pipe.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// If lpOverlapped is NULL, FT_WritePipe operates synchronously, that is, it returns only when
+/// the transfer has been completed.
+///
+/// If lpOverlapped is not NULL, FT_WritePipe operates asynchronously and immediately
+/// returns FT_IO_PENDING. FT_GetOverlappedResult should be called to wait for the
+/// completion of this asynchronous operation. When supplying the lpOverlapped to
+/// FT_WritePipe, the event parameter of lpOverlapped should be initialized using
+/// FT_InitializeOverlapped.
+///
+/// If an FT_WritePipe call fails with an error code (status other than FT_OK or
+/// FT_IO_PENDING), an application should call FT_AbortPipe. To ensure that the pipe is in a
+/// clean state it is recommended to follow the abort procedure mentioned in the section 3.2
+/// of "AN_412_FT600_FT601 USB Bridge chips Integration”.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn write_pipe(
+    handle: FT_HANDLE,
+    uc_pipe_id: u8,
+    buffer: &mut Vec<u8>,
+    p_overlapped: LPOVERLAPPED,
+) -> Result<ULONG> {
+    //trace!("FT_WritePipe(_)");
+    let mut bytes_transfered: ULONG = 0;
+    let status = unsafe {
+        FT_Status::try_from(FT_WritePipe(
+            handle,
+            uc_pipe_id as UCHAR,
+            buffer.as_mut_ptr(),
+            buffer.len() as ULONG,
+            &mut bytes_transfered as PULONG,
+            p_overlapped,
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(bytes_transfered);
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Read data from pipe.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// If lpOverlapped is NULL, FT_ReadPipe operates synchronously, that is, it returns only when
+/// the transfer has been completed.
+///
+/// If lpOverlapped is not NULL, FT_ReadPipe operates asynchronously and immediately
+/// returns FT_IO_PENDING. FT_GetOverlappedResult should be called to wait for the
+/// completion of this asynchronous operation. When supplying the lpOverlapped to
+/// FT_ReadPipe, the event parameter of lpOverlapped should be initialized using
+/// FT_InitializeOverlapped.
+///
+/// Default read timeout value is 5 seconds and this can be changed by calling
+/// FT_SetPipeTimeout API.
+///
+/// If the timeout occurred, FT_ReadPipe (FT_GetOverlappedResult in case of asynchronous
+/// call), returns with an error code FT_TIMEOUT.
+///
+/// An application can call FT_SetPipeTimeout with a timeout value 0 to disable timeouts.
+/// If FT_ReadPipe call fails with an error code (status other than FT_OK or FT_IO_PENDING),
+/// an application should call FT_AbortPipe. To ensure that the pipe is in a clean state it is
+/// recommended to follow the abort procedure mentioned in section 3.2 of
+/// "AN_412_FT600_FT601 USB Bridge chips Integration”.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn read_pipe(
+    handle: FT_HANDLE,
+    uc_pipe_id: u8,
+    buffer: &mut Vec<u8>,
+    p_overlapped: LPOVERLAPPED,
+) -> Result<ULONG> {
+    //trace!("FT_ReadPipe(_)");
+    let mut bytes_transfered: ULONG = 0;
+    let status = unsafe {
+        FT_Status::try_from(FT_ReadPipe(
+            handle,
+            uc_pipe_id as UCHAR,
+            buffer.as_mut_ptr(),
+            buffer.len() as ULONG,
+            &mut bytes_transfered as PULONG,
+            p_overlapped,
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(bytes_transfered);
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Writes data to the pipe. FT_WritePipeEx has much lower latency compared to FT_WritePipe when
+/// used for asynchronous transfers with FT_SetStreamPipe. However the maximum input buffer size
+/// supported for this API is 1 Mega Byte to guarantee the lower latencies.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// If lpOverlapped is NULL, FT_WritePipeEx operates synchronously, that is, it returns only
+/// when the transfer has been completed.
+///
+/// If lpOverlapped is not NULL, FT_WritePipeEx operates asynchronously and immediately
+/// returns FT_IO_PENDING. FT_GetOverlappedResult should be called to wait for the
+/// completion of this asynchronous operation. When supplying the lpOverlapped to
+/// FT_WritePipeEx, the event parameter of lpOverlapped should be initialized using
+/// FT_InitializeOverlapped.
+///
+/// If an FT_WritePipeEx call fails with an error code (status other than FT_OK or
+/// FT_IO_PENDING), an application should call FT_AbortPipe. To ensure that the pipe is in a
+/// clean state it is recommended to follow the abort procedure mentioned in the section 3.2
+/// of "AN_412_FT600_FT601 USB Bridge chips Integration”.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn write_pipe_ex(
+    handle: FT_HANDLE,
+    uc_pipe_id: u8,
+    buffer: &mut Vec<u8>,
+    p_overlapped: LPOVERLAPPED,
+) -> Result<ULONG> {
+    //trace!("FT_WritePipe(_)");
+    let mut bytes_transfered: ULONG = 0;
+    let status = unsafe {
+        FT_Status::try_from(FT_WritePipeEx(
+            handle,
+            uc_pipe_id as UCHAR,
+            buffer.as_mut_ptr(),
+            buffer.len() as ULONG,
+            &mut bytes_transfered as PULONG,
+            p_overlapped,
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(bytes_transfered);
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Reads data from the pipe. An enhanced version of FT_ReadPipe for improved latencies between
+/// reads. However to get the maximum benefit, this API should be used asynchronously with
+/// FT_SetStreamPipe.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// If lpOverlapped is NULL, FT_ReadPipeEx operates synchronously, that is, it returns only
+/// when the transfer has been completed.
+///
+/// If lpOverlapped is not NULL, FT_ReadPipeEx operates asynchronously and immediately
+/// returns FT_IO_PENDING. FT_GetOverlappedResult should be called to wait for the
+/// completion of this asynchronous operation. When supplying the lpOverlapped to
+/// FT_ReadPipeEx, the event parameter of lpOverlapped should be initialized using
+/// FT_InitializeOverlapped.
+///
+/// Default read timeout value is 5 seconds and this can be changed by calling
+/// FT_SetPipeTimeout API.
+///
+/// If the timeout occurred, FT_ReadPipeEx (FT_GetOverlappedResult in case of asynchronous
+/// call), returns with an error code FT_TIMEOUT.
+///
+/// An application can call FT_SetPipeTimeout with a timeout value 0 to disable timeouts.
+/// If the FT_ReadPipeEx call fails with an error code (status other than FT_OK or
+/// FT_IO_PENDING), an application should call FT_AbortPipe. To ensure that the pipe is
+/// in a clean state it is recommended to follow the abort procedure mentioned in section 3.2
+/// of "AN_412_FT600_FT601 USB Bridge chips Integration”.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn read_pipe_ex(
+    handle: FT_HANDLE,
+    uc_pipe_id: u8,
+    buffer: &mut Vec<u8>,
+    p_overlapped: LPOVERLAPPED,
+) -> Result<ULONG> {
+    //trace!("FT_ReadPipe(_)");
+    let mut bytes_transfered: ULONG = 0;
+    let status = unsafe {
+        FT_Status::try_from(FT_ReadPipeEx(
+            handle,
+            uc_pipe_id as UCHAR,
+            buffer.as_mut_ptr(),
+            buffer.len() as ULONG,
+            &mut bytes_transfered as PULONG,
+            p_overlapped,
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(bytes_transfered);
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+/// Retrieves the result of an overlapped operation to a pipe
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// In case the call fails with an error code (status other than FT_OK or FT_IO_PENDING), an
+/// application should call FT_AbortPipe. To ensure that the pipe is in a clean state it is
+/// recommended to follow the abort procedure mentioned in section 3.2 of
+/// "AN_412_FT600_FT601 USB Bridge chips Integration”.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn get_overlapped_result(
+    handle: FT_HANDLE,
+    p_overlapped: LPOVERLAPPED,
+    b_wait: bool,
+) -> Result<ULONG> {
+    //trace!("FT_GetOverlappedResult(_)");
+    let mut bytes_transfered: ULONG = 0;
+    let status = unsafe {
+        FT_Status::try_from(FT_GetOverlappedResult(
+            handle,
+            p_overlapped,
+            &mut bytes_transfered as PULONG,
+            b_wait.into(),
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(bytes_transfered);
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Initialize resource for overlapped parameter.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// This parameter should be released using
+/// FT_ReleaseOverlapped after usage.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn initialize_overlapped(handle: FT_HANDLE, p_overlapped: LPOVERLAPPED) -> Result<()> {
+    //trace!("FT_InitializeOverlapped(_)");
+    let status = unsafe { FT_Status::try_from(FT_InitializeOverlapped(handle, p_overlapped)) }?;
+    if status == FT_OK {
+        return Ok(());
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Releases resource for the overlapped parameter
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// This parameter should be released using
+/// FT_ReleaseOverlapped after usage.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn release_overlapped(handle: FT_HANDLE, p_overlapped: LPOVERLAPPED) -> Result<()> {
+    //trace!("FT_ReleaseOverlapped(_)");
+    let status = unsafe { FT_Status::try_from(FT_ReleaseOverlapped(handle, p_overlapped)) }?;
+    if status == FT_OK {
+        return Ok(());
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Sets streaming protocol transfer for specified pipes. This is for applications that transfer
+/// (write or read) a fixed size of data to or from the device.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn set_stream_pipe(
+    handle: FT_HANDLE,
+    b_all_write_pipes: bool,
+    b_all_read_pipes: bool,
+    uc_pipe_id: u8,
+    ul_stream_size: ULONG,
+) -> Result<()> {
+    //trace!("FT_SetStreamPipe(_)");
+    let status = unsafe {
+        FT_Status::try_from(FT_SetStreamPipe(
+            handle,
+            b_all_write_pipes.into(),
+            b_all_read_pipes.into(),
+            uc_pipe_id.into(),
+            ul_stream_size,
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(());
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Clears streaming protocol transfer for specified pipes
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn clear_stream_pipe(
+    handle: FT_HANDLE,
+    b_all_write_pipes: bool,
+    b_all_read_pipes: bool,
+    uc_pipe_id: u8,
+) -> Result<()> {
+    //trace!("FT_ClearStreamPipe(_)");
+    let status = unsafe {
+        FT_Status::try_from(FT_ClearStreamPipe(
+            handle,
+            b_all_write_pipes.into(),
+            b_all_read_pipes.into(),
+            uc_pipe_id.into(),
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(());
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/// Configures the timeout value for a given endpoint. FT_ReadPipe/FT_WritePipe will timeout
+/// in case it hangs for TimeoutInMs amount of time. This will override the default timeout of
+/// 5sec. This new value is valid only for the life cycle of ftHandle. A new FT_Create call
+/// resets the timeout to default.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+pub fn set_pipe_timeout(
+    handle: FT_HANDLE,
+    uc_pipe_id: u8,
+    ul_timeout_in_ms: ULONG,
+) -> Result<()> {
+    //trace!("FT_SetPipeTimeout(_)");
+    let status = unsafe {
+        FT_Status::try_from(FT_SetPipeTimeout(
+            handle,
+            uc_pipe_id.into(),
+            ul_timeout_in_ms,
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(());
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+
+/* This one isn't exposed? TODO
+/// Gets the timeout value configured for a given IN endpoint.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+/// // todo: 
+pub fn get_pipe_timeout(
+    handle: FT_HANDLE,
+    uc_pipe_id: u8,
+) -> Result<ULONG> {
+    //trace!("FT_GetPipeTimeout(_)");
+    let mut ul_timeout_in_ms: ULONG = 0;
+    let status = unsafe {
+        FT_Status::try_from(FT_GetPipeTimeout(
+            handle,
+            uc_pipe_id.into(),
+            &mut ul_timeout_in_ms as PULONG,
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(ul_timeout_in_ms);
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
+ */
+
 // todo: FT_FlushPipe
-// todo: FT_AbortPipe
+
+/// Aborts all of the pending transfers for a pipe.
+///
+/// Returns [`FT_OK`] if successful, otherwise the return value is an
+/// FT error code. See [`FT_Status`] for more information.
+///
+/// # Example
+///
+/// ```no_run
+/// use libftd3xx::functions::{create_by_index, close};
+///
+/// let handle = create_by_index(0).unwrap();
+/// todo!();
+/// close(handle).unwrap();
+/// ```
+/// // todo: 
+pub fn abort_pipe(
+    handle: FT_HANDLE,
+    uc_pipe_id: u8,
+) -> Result<()> {
+    //trace!("FT_AbortPipe(_)");
+    let status = unsafe {
+        FT_Status::try_from(FT_AbortPipe(
+            handle,
+            uc_pipe_id.into(),
+        ))
+    }?;
+    if status == FT_OK {
+        return Ok(());
+    } else {
+        return Err(Error::APIError(status));
+    }
+}
 // todo: FT_GetDeviceDescriptor
 // todo: FT_GetConfigurationDescriptor
 // todo: FT_GetInterfaceDescriptor
-// todo: FT_GetPipeInformation
 // todo: FT_GetStringDescriptor
 // todo: FT_GetDescriptor
 // todo: FT_ControlTransfer
 // todo: FT_SetNotificationCallback
 // todo: FT_ClearNotificationCallback
+
 /// Returns the chip configuration.
 ///
 /// Returns [`FT_OK`] if successful, otherwise the return value is an
@@ -453,7 +951,6 @@ pub fn cycle_device_port(handle: FT_HANDLE) -> Result<()> {
 // todo: FT_IsDevicePath
 // todo: FT_GetDriverVersion
 // todo: FT_GetLibraryVersion
-// todo: FT_SetPipeTimeout
 // todo: FT_EnableGPIO
 // todo: FT_WriteGPIO
 // todo: FT_ReadGPIO
