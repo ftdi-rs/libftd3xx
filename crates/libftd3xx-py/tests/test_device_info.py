@@ -12,3 +12,7 @@ class DeviceInfoTestCase(unittest.TestCase):
         device_count = ftd3xx.create_device_info_list()
         device_info = ftd3xx.get_device_info_list(device_count)
         self.assertEqual(device_count, len(device_info))
+
+
+if __name__ == '__main__':
+    unittest.main()

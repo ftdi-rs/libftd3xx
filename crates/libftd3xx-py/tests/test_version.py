@@ -26,5 +26,9 @@ class DriverVersionTestCase(unittest.TestCase):
             # handle = ftd3xx.create_by_serial_number(device_info[0].SerialNumber)
             handle = ftd3xx.create_by_index(0)
             _ = ftd3xx.get_driver_version(handle)
-            print(f"Driver Version: {_}")
+            #print(f"Driver Version: {_}")
             ftd3xx.close(handle)
+
+
+if __name__ == '__main__':
+    unittest.main()
