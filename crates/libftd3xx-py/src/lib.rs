@@ -78,6 +78,16 @@ fn set_chip_configuration(handle: &FtHandle, config: Option<&Ft60xConfiguration>
     Ok(result)
 }
 
+#[pyfunction]
+fn reset_device_port(handle: &FtHandle) -> Result<()> {
+    Ok(ftd3xx::functions::reset_device_port(*handle.0.lock().unwrap())?)
+}
+
+#[pyfunction]
+fn cycle_device_port(handle: &FtHandle) -> Result<()> {
+    Ok(ftd3xx::functions::cycle_device_port(*handle.0.lock().unwrap())?)
+}
+
 #[pymodule]
 fn libftd3xx(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("FtException", py.get_type::<FtException>())?;
@@ -96,6 +106,9 @@ fn libftd3xx(py: Python<'_>, m: &PyModule) -> PyResult<()> {
 
     m.add_function(wrap_pyfunction!(get_chip_configuration, m)?)?;
     m.add_function(wrap_pyfunction!(set_chip_configuration, m)?)?;
+
+    m.add_function(wrap_pyfunction!(reset_device_port, m)?)?;
+    m.add_function(wrap_pyfunction!(cycle_device_port, m)?)?;
 
     Ok(())
 }
