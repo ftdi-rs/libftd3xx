@@ -158,11 +158,7 @@ pub fn get_device_info_list(num_devices: &mut u32) -> Result<Vec<FT_DEVICE_LIST_
 pub fn create_by_index(index: libftd3xx_ffi::ULONG) -> Result<FT_HANDLE> {
     //trace!("FT_Create(_)");
     let mut handle: FT_HANDLE = std::ptr::null_mut();
-    let mut index = index;
-    let pv_arg = &mut index as *mut std::ffi::c_ulong as *mut std::ffi::c_void;
-    //let test = unsafe { *(pv_arg as *const std::ffi::c_ulong) };
-    //println!("{test}");
-
+    let pv_arg = index as *mut std::ffi::c_ulong as *mut std::ffi::c_void;
     let status = unsafe { FT_Status::try_from(FT_Create(pv_arg, FT_OPEN_BY_INDEX, &mut handle)) }?;
     if status == FT_OK {
         return Ok(handle);
