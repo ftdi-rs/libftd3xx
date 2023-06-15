@@ -47,7 +47,7 @@ fn create_by_description(description: String) -> Result<FtHandle> {
 
 #[pyfunction]
 fn create_by_serial_number(serial_number: String) -> Result<FtHandle> {
-    Ok(FtHandle::from(ftd3xx::functions::create_by_description(serial_number)?))
+    Ok(FtHandle::from(ftd3xx::functions::create_by_serial_number(serial_number)?))
 }
 
 #[pyfunction]
