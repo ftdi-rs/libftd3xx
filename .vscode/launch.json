@@ -1,6 +1,13 @@
 {
     "configurations": [
         {
+            "name": "Rust Debug Attach To Process",
+            "type": "lldb",
+            "request": "attach",
+            "pid": "${command:pickProcess}",
+        },
+        /*
+                {
             "type": "lldb",
             "request": "launch",
             "name": "Cargo test [Windows]",
@@ -29,5 +36,6 @@
             },
             "args": [],
         },
+        */
     ]
 }
