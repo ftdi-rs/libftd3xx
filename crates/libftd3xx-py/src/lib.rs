@@ -81,6 +81,7 @@ fn set_chip_configuration(handle: &FtHandle, config: Option<&Ft60xConfiguration>
 #[pymodule]
 fn libftd3xx(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("FtException", py.get_type::<FtException>())?;
+    m.add("Ft60xConfiguration", py.get_type::<Ft60xConfiguration>())?;
 
     m.add_function(wrap_pyfunction!(get_library_version, m)?)?;
     m.add_function(wrap_pyfunction!(get_driver_version, m)?)?;
