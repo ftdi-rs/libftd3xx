@@ -508,9 +508,20 @@ mod tests {
     // boilerplate function to simplify all the tests
     #[cfg(feature = "hardware_tests")]
     fn get_first_device() -> FT_HANDLE {
-        // for some reason on Windows 11 64-bit create_by_index isn't working...
-        //let handle = create_by_index(0).unwrap();
-
+        let mut handle = std::ptr::null_mut();
+        loop {
+            // Open the handle, sometimes we get some errors so lets retry here...
+            handle = match create_by_index(0) {
+                Ok(h) => h,
+                Err(APIError(FT_DEVICE_NOT_OPENED))
+                | Err(APIError(FT_DEVICE_NOT_FOUND))
+                | Err(APIError(FT_OTHER_ERROR)) => continue,
+                Err(e) => panic!("create_by_index(0) failed: {e}"),
+            };
+            break;
+        }
+        handle
+        /*
         // Grab the first device
         let mut device_count = create_device_info_list().unwrap();
         assert_eq!(
@@ -548,6 +559,7 @@ mod tests {
             break;
         }
         handle
+        */
     }
 
     //#[cfg(not(feature = "hardware_tests"))]
